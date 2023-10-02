@@ -3,6 +3,7 @@ package com.example.librarymanagementsystem.service.impl;
 import com.example.librarymanagementsystem.Enum.Genre;
 import com.example.librarymanagementsystem.dto.responseDTO.BookResponse;
 import com.example.librarymanagementsystem.exception.AuthorNotFoundException;
+import com.example.librarymanagementsystem.exception.BookNotAvailableException;
 import com.example.librarymanagementsystem.model.Author;
 import com.example.librarymanagementsystem.model.Book;
 import com.example.librarymanagementsystem.repository.AuthorRepository;
@@ -12,6 +13,7 @@ import com.example.librarymanagementsystem.transformer.BookTransformer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import javax.swing.text.html.Option;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -24,6 +26,7 @@ public class BookServiceImpl implements BookService {
     @Autowired
     BookRepository bookRepository;
 
+    @Override
     public String addBook(Book book) {
 
         //checks if author is exist or not
@@ -41,6 +44,20 @@ public class BookServiceImpl implements BookService {
         return "Books added successfully";
     }
 
+    @Override
+    public String deleteBook(String title) {
+
+        Optional<Book> bookOptional = Optional.ofNullable(bookRepository.findByTitle(title));
+
+        if(!bookOptional.isPresent()){
+            throw new BookNotAvailableException("Book does not exists.");
+        }
+        bookRepository.delete(bookOptional.get());
+        return "Book deleted successfully.";
+    }
+
+
+    @Override
     public List<BookResponse> getBooksByGenreAndCostGreaterThan(String genre, double cost) {
 
         // input dto to model, i.e  get list of books
@@ -56,6 +73,7 @@ public class BookServiceImpl implements BookService {
         return response;
     }
 
+    @Override
     public List<BookResponse> getBooksByGenreAndCostGreaterThanHQL(Genre genre, double cost) {
 
         // input dto to model, i.e  get list of books
@@ -71,6 +89,7 @@ public class BookServiceImpl implements BookService {
         return response;
     }
 
+    @Override
     public List<BookResponse> getBooksByNoOfPagesBetweenAandB(int a, int b) {
 
         // input dto to model, i.e  get list of books
@@ -85,4 +104,6 @@ public class BookServiceImpl implements BookService {
         //return the response sto
         return response;
     }
+
+
 }

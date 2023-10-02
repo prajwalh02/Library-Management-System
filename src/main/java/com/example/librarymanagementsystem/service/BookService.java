@@ -15,4 +15,6 @@ public interface BookService {
     public List<BookResponse> getBooksByGenreAndCostGreaterThanHQL(Genre genre, double cost);
 
     public List<BookResponse> getBooksByNoOfPagesBetweenAandB(int a, int b);
+
+    String deleteBook(String title);
 }
