@@ -4,5 +4,7 @@ import com.example.librarymanagementsystem.dto.responseDTO.IssueBookResponse;
 
 public interface TransactionService {
 
-    public IssueBookResponse issueBook(int bookId, int studentId);
+    IssueBookResponse issueBook(int bookId, int studentId);
+
+    void releaseBook(int transactionId);
 }

@@ -3,6 +3,7 @@ package com.example.librarymanagementsystem.service.impl;
 import com.example.librarymanagementsystem.Enum.Gender;
 import com.example.librarymanagementsystem.dto.requestDTO.StudentRequest;
 import com.example.librarymanagementsystem.dto.responseDTO.StudentResponse;
+import com.example.librarymanagementsystem.mail.MailComposer;
 import com.example.librarymanagementsystem.model.LibraryCard;
 import com.example.librarymanagementsystem.repository.StudentRepository;
 import com.example.librarymanagementsystem.model.Student;
@@ -10,6 +11,8 @@ import com.example.librarymanagementsystem.service.StudentService;
 import com.example.librarymanagementsystem.transformer.LibraryCardTransformer;
 import com.example.librarymanagementsystem.transformer.StudentTransformer;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -21,6 +24,9 @@ public class StudentServiceImpl implements StudentService {
 
     @Autowired
     StudentRepository studentRepository;
+
+    @Autowired
+    JavaMailSender javaMailSender;
 
     public StudentResponse addStudent(StudentRequest studentRequest) {
 
@@ -41,6 +47,10 @@ public class StudentServiceImpl implements StudentService {
 
         //saved model to response dto, i.e convert model to dto
         StudentResponse studentResponse = StudentTransformer.StudentToStudentResponse(saveStudent);
+
+        // send mail
+        SimpleMailMessage message = MailComposer.composeAddStudentEmail(saveStudent);
+        javaMailSender.send(message);
 
         return studentResponse;
 

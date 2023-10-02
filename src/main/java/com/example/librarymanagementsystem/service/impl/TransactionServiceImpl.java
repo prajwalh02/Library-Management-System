@@ -4,7 +4,10 @@ import com.example.librarymanagementsystem.Enum.TransactionStatus;
 import com.example.librarymanagementsystem.dto.responseDTO.IssueBookResponse;
 import com.example.librarymanagementsystem.exception.BookNotAvailableException;
 import com.example.librarymanagementsystem.exception.StudentNotFoundException;
+import com.example.librarymanagementsystem.exception.TransactionNotFoundException;
+import com.example.librarymanagementsystem.mail.MailComposer;
 import com.example.librarymanagementsystem.model.Book;
+import com.example.librarymanagementsystem.model.LibraryCard;
 import com.example.librarymanagementsystem.model.Student;
 import com.example.librarymanagementsystem.model.Transaction;
 import com.example.librarymanagementsystem.repository.BookRepository;
@@ -76,18 +79,21 @@ public class TransactionServiceImpl implements TransactionService {
 
 
         //  send an email
-        String text = "Hi !!, " + student.getName() + " \n\n\tThe below Book has been issued to you\n" +
-                book.getTitle() + " \n\n\tThis is the transaction number: "+savedTransaction.getTransactionNumber() +
-                " \n\tTransaction Date & Time: " + savedTransaction.getTransactionTime();
+        SimpleMailMessage message = MailComposer.composeIssueBookEmail(savedBook, savedStudent, savedTransaction);
+        javaMailSender.send(message);
 
-        SimpleMailMessage simpleMailMessage = new SimpleMailMessage();
-        simpleMailMessage.setFrom("prajwalspring@gmail.com");
-        simpleMailMessage.setTo(student.getEmail());
-        simpleMailMessage.setSubject("Congrats!! Book Issued");
-        simpleMailMessage.setText(text);
 
-        javaMailSender.send(simpleMailMessage);
-
+//        String text = "Hi !!, " + student.getName() + " \n\n\tThe below Book has been issued to you\n" +
+//                book.getTitle() + " \n\n\tThis is the transaction number: "+savedTransaction.getTransactionNumber() +
+//                " \n\tTransaction Date & Time: " + savedTransaction.getTransactionTime();
+//
+//        SimpleMailMessage simpleMailMessage = new SimpleMailMessage();
+//        simpleMailMessage.setFrom("prajwalspring@gmail.com");
+//        simpleMailMessage.setTo(student.getEmail());
+//        simpleMailMessage.setSubject("Congrats!! Book Issued");
+//        simpleMailMessage.setText(text);
+//
+//        javaMailSender.send(simpleMailMessage);
 
         //prepare response
         return IssueBookResponse.builder()
@@ -100,5 +106,39 @@ public class TransactionServiceImpl implements TransactionService {
                 .authorName(savedBook.getAuthor().getName())
                 .build();
 
+    }
+
+    @Override
+    public void releaseBook(int transactionId) {
+        // check if transaction exists
+        Optional<Transaction> transactionOptional = transactionRepository.findById(transactionId);
+        if(transactionOptional.isEmpty()){
+            throw new TransactionNotFoundException("Invalid transaction Id!");
+        }
+
+        // get transaction
+        Transaction transaction = transactionOptional.get();
+
+        // get corresponding book and library card
+        Book book = transaction.getBook();
+        LibraryCard libraryCard = transaction.getLibraryCard();
+
+        // set book free
+        book.setIssued(false);
+
+        // remove transaction from its parent tables i.e. book and library card
+        book.getTransactions().remove(transaction);
+        libraryCard.getTransactions().remove(transaction);
+
+        // remove transaction from transaction DB
+        transactionRepository.delete(transaction);
+
+        // save parent entities to update them
+        Book savedBook = bookRepository.save(book);
+        Student savedStudent = studentRepository.save(libraryCard.getStudent());
+
+        // send email
+        SimpleMailMessage message = MailComposer.sendReleaseBookEmail(savedStudent, savedBook, transaction);
+        javaMailSender.send(message);
     }
 }
